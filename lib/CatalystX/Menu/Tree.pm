@@ -5,15 +5,13 @@ use 5.008000;
 use strict;
 use warnings;
 use MRO::Compat;
-use mro 'c3';
-Class::C3::initialize();
 
 use vars qw($VERSION);
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 =head1 NAME
 
-CatalystX::Menu::Tree - Generate a menu tree from a Catalyst application's actions
+CatalystX::Menu::Tree - Generate Catalyst application menus
 
 =head1 SYNOPSIS
 
@@ -28,12 +26,12 @@ CatalystX::Menu::Tree - Generate a menu tree from a Catalyst application's actio
     menutitle_attr => 'MenuTitle',
     add_nodes => [
         {
-            menupath => '/Bargains'
+            menupath => '/Bargains',
             menutitle => 'Cheap stuff',
             uri => '/products/cheap',
         },
         {
-            menupath => '/Returns'
+            menupath => '/Returns',
             menutitle => 'Return a product',
             uri => '/products/returns',
         },
@@ -175,12 +173,14 @@ sub _build_tree {
     for my $namespace (keys %$actions) {
         for my $name (keys %{$actions->{$namespace}}) {
             my $action = $actions->{$namespace}{$name};
-            push @data,
-                {
-                    menupath => $action->attributes->{$menpattr}[0],
-                    menutitle => $action->attributes->{$mentattr}[0],
-                    uri => $c->uri_for($action),
-                };
+            my %data = (
+                menupath => $action->attributes->{$menpattr}[0],
+                uri => $c->uri_for($action),
+            );
+            if ($mentattr) {
+                $data{menutitle} = $action->attributes->{$mentattr}[0];
+            }
+            push @data, { %data };
         }
     }
 
@@ -201,7 +201,7 @@ sub _build_tree {
 
     for my $obj (@sorted) {
         my $mpath = $obj->[1]{menupath};
-        my $mtitle = $obj->[1]{menutitle};
+        my $mtitle = $obj->[1]{menutitle} || '';
         $mpath =~ s!^/!!;
         my $uri = $obj->[1]{uri};
         my @path = split m!/!, $mpath;
@@ -228,14 +228,19 @@ sub _build_tree {
         # with add_node to attach a URI or title to a label
         if (exists $ref->{$node}) {
             $ref->{$node}{uri} = $uri;
-            $ref->{$node}{menutitle} = $mtitle;
+            if ($mtitle) {
+                $ref->{$node}{menutitle} = $mtitle;
+            }
         }
         else {
-            $ref->{$node} = {
+            my %data = (
                 children => {},
                 uri => $uri,
-                menutitle => $mtitle,
-            };
+            );
+            if ($mtitle) {
+                $data{menutitle} = $mtitle;
+            }
+            $ref->{$node} = { %data };
         }
     }
 

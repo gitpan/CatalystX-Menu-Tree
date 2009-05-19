@@ -13,6 +13,8 @@ sub begin :Private {
     # my $menu = CatalystX::Menu::Suckerfish->new(...);
     # $c->session->{menu} = $menu->output;  # stash nested HTML UL element for use in TT View
 
+    require Data::Dumper;
+
     my $menutree = CatalystX::Menu::Tree->new(
         context => $c,
         menupath_attr => 'MenuPath',
@@ -26,16 +28,39 @@ sub begin :Private {
         ],
     );
     my $tree = $menutree->{tree};
+    $c->stash->{tree1} = Data::Dumper->Dump([$tree],['$tree']);
 
-    require Data::Dumper;
 
-    $c->stash->{menu} = Data::Dumper->Dump([$tree],['$tree']);
+    $menutree = CatalystX::Menu::Tree->new(
+        context => $c,
+        menupath_attr => 'MenuPath',
+        add_nodes => [
+            {
+                menupath => 'Foo/Bar',
+                uri => '/foobar',
+            },
+        ],
+    );
+    $tree = $menutree->{tree};
+    $c->stash->{tree2} = Data::Dumper->Dump([$tree],['$tree']);
 }
 
 sub index :Path :Args(0) {
     my ($self, $c) = @_;
 
     $c->res->body($c->stash->{menu});
+}
+
+sub tree1 :Local {
+    my ($self, $c) = @_;
+
+    $c->res->body($c->stash->{tree1});
+}
+
+sub tree2 :Local {
+    my ($self, $c) = @_;
+
+    $c->res->body($c->stash->{tree2});
 }
 
 sub public

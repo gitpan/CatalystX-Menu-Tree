@@ -7,7 +7,9 @@ use Test::More 'no_plan';
 
 use Catalyst::Test 'TestApp';
 
-my $control = eval <<'EOF';
+my ($control, $res, $tree);
+
+$control = eval <<'EOF';
 {
 'About us' => {
                 'children' => {},
@@ -35,8 +37,37 @@ my $control = eval <<'EOF';
 };
 EOF
 
-my $res = request('/');
-my $tree;
-eval $res->content;
+$res = request('/tree1');
+$tree = eval $res->content;
+
+ok(eq_hash($control, $tree), 'fetch expected data structure');
+
+$control = eval <<'EOF';
+{
+'About us' => {
+                'children' => {},
+                'uri' => bless( do{\(my $o = 'http://localhost/about/us')}, 'URI::http' )
+              },
+'Foo' => {
+           'children' => {
+                           'Bar' => {
+                                      'children' => {},
+                                      'uri' => '/foobar'
+                                    }
+                         }
+         },
+'Main' => {
+            'children' => {
+                            'Public' => {
+                                          'children' => {},
+                                          'uri' => bless( do{\(my $o = 'http://localhost/public')}, 'URI::http' )
+                                        }
+                          }
+          }
+};
+EOF
+
+$res = request('/tree2');
+$tree = eval $res->content;
 
 ok(eq_hash($control, $tree), 'fetch expected data structure');
